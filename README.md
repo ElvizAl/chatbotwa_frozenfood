@@ -36,6 +36,39 @@ Untuk menentukan kredensial sendiri, isi `SEED_NAME`, `SEED_EMAIL`, dan
 Jika email sudah terdaftar, seed melewati pembuatan akun tanpa mengubah password.
 Seed tidak dijalankan otomatis saat aplikasi dimulai.
 
+## Menghubungkan Kirimdev
+
+SDK dan endpoint webhook sudah tersedia. Isi `.env` di root proyek:
+
+```dotenv
+KIRIMDEV_API_KEY=isi_api_key
+KIRIMDEV_PHONE_NUMBER_ID=isi_phone_number_id
+KIRIMDEV_WEBHOOK_SECRET=isi_signing_secret_subscription
+```
+
+`KIRIMDEV_PHONE_NUMBER_ID` berisi ID nomor dari Kirimdev, bukan nomor WhatsApp
+pelanggan. Restart `bun run dev` setelah mengubah environment.
+
+1. Login di aplikasi, buka dashboard `/`, lalu klik **Cek koneksi Kirimdev**.
+   Pemeriksaan membaca akun Kirimdev; tidak mengirim pesan. Endpoint
+   `GET /api/kirimdev/status` hanya dapat diakses pengguna yang login.
+2. Untuk menerima webhook di komputer lokal, jalankan tunnel HTTPS menuju port
+   Next.js yang digunakan, misalnya `ngrok http 3000` jika ngrok sudah terpasang.
+3. Pada dashboard Kirimdev, daftarkan URL publik
+   `https://domain-publik-kamu/api/webhooks/kirimdev` dan pilih event
+   `message.received` serta `message.status`. Jika tunnel berubah, perbarui URL.
+4. Cocokkan `KIRIMDEV_WEBHOOK_SECRET` dengan signing secret subscription tersebut.
+   Kirim test delivery dari dashboard Kirimdev, lalu periksa respons 200 pada
+   riwayat delivery. Request tanpa signature valid akan ditolak (401).
+
+Handler saat ini memverifikasi signature dan mengakui penerimaan webhook.
+Pesan belum disimpan atau dibalas otomatis. Sebelum memproses transaksi atau
+balasan chatbot, tambahkan penyimpanan pesan dan deduplikasi event secara persisten.
+Status koneksi nomor tidak membuktikan webhook sudah dapat diakses.
+
+Panduan resmi: [SDK](https://docs.kirimdev.com/sdks/typescript/),
+[Webhook](https://docs.kirimdev.com/webhooks/overview/).
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

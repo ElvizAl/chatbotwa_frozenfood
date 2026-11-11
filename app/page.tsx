@@ -3,8 +3,8 @@ import { Suspense } from "react";
 import { Dashboard } from "@/modules/dashboard/components/dashboard";
 
 export const metadata: Metadata = {
-  title: "Dashboard | Frozen Food",
-  description: "Ringkasan penjualan, pesanan, produk, dan chatbot WhatsApp Frozen Food.",
+  title: "Cek koneksi | Frozen Food",
+  description: "Periksa koneksi WhatsApp dan pengaturan webhook Kirimdev Frozen Food.",
 };
 
 export default function Home() {
