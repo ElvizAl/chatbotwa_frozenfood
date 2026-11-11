@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:seed": "bunx prisma db seed --config prisma7.config.ts"
   },
   "dependencies": {
     "@anvia/core": "^1.18.0",

@@ -20,6 +20,22 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Seed satu akun
+
+Setelah `DATABASE_URL` dikonfigurasi dan tabel auth tersedia, jalankan secara manual:
+
+```bash
+bun run db:seed
+```
+
+Seed membuat satu akun melalui Better Auth dengan nama `Admin` dan email
+`admin@frozenfood.test`. Password acak ditampilkan sekali saat akun dibuat.
+Untuk menentukan kredensial sendiri, isi `SEED_NAME`, `SEED_EMAIL`, dan
+`SEED_PASSWORD` di `.env` sebelum menjalankan seed.
+
+Jika email sudah terdaftar, seed melewati pembuatan akun tanpa mengubah password.
+Seed tidak dijalankan otomatis saat aplikasi dimulai.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

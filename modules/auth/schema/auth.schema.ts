@@ -33,13 +33,15 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 
 export const loginSchema = z.object({
   email: z
-    .email("Format email tidak valid")
+    .string()
     .trim()
-    .toLowerCase(),
+    .toLowerCase()
+    .pipe(z.email("Format email tidak valid")),
 
   password: z
     .string()
-    .min(1, "Password wajib diisi"),
+    .min(1, "Password wajib diisi")
+    .max(128, "Password maksimal 128 karakter"),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
