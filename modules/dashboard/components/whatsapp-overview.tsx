@@ -1,0 +1,10 @@
+import { Bot, CheckCheck, ChevronDown, MessageCircle, WifiOff } from "lucide-react";
+
+export function WhatsappOverview() {
+  return (
+    <section id="whatsapp" aria-labelledby="whatsapp-title" className="flex scroll-mt-24 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white">
+      <div className="bg-[#123e35] p-6 text-white"><div className="flex items-center justify-between"><span className="flex size-10 items-center justify-center rounded-xl bg-white/10"><MessageCircle className="size-5" /></span><span className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[10px] text-emerald-100"><WifiOff className="size-3" />Belum terhubung</span></div><h2 id="whatsapp-title" className="mt-5 text-lg font-semibold tracking-tight">Asisten toko, selalu siap.</h2><p className="mt-2 text-xs leading-5 text-emerald-100/65">Bantu pelanggan menemukan produk dan memesan melalui WhatsApp.</p></div>
+      <div className="flex flex-1 flex-col p-5"><div className="mb-4 flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider text-slate-400"><Bot className="size-3.5" />Contoh percakapan</div><div className="self-end rounded-2xl rounded-tr-sm bg-slate-100 px-3.5 py-2.5 text-[11px] leading-5 text-slate-600">Kak, chicken nugget masih ada?</div><div className="mr-6 mt-3 rounded-2xl rounded-tl-sm bg-emerald-50 px-3.5 py-2.5 text-[11px] leading-5 text-emerald-900">Halo Kak! Chicken Nugget 500 g tersedia, harganya Rp45.000. Mau pesan berapa kemasan?<div className="mt-1 flex justify-end"><CheckCheck className="size-3 text-emerald-500" /></div></div><details className="group mt-5 border-t border-slate-100 pt-4"><summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-xs font-medium text-slate-600 focus-visible:outline-emerald-600">Tentang koneksi WhatsApp <ChevronDown className="size-3.5 transition group-open:rotate-180" /></summary><p className="mt-3 text-[11px] leading-5 text-slate-500">Integrasi WhatsApp belum dikonfigurasi. Percakapan ini hanya pratinjau; dashboard belum menerima atau mengirim pesan pelanggan.</p></details></div>
+    </section>
+  );
+}

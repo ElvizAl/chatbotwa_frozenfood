@@ -18,7 +18,6 @@ export function LoginForm({ loginAction }: { loginAction: typeof loginService })
   const {
     register,
     handleSubmit,
-    setError,
     formState: { errors, isSubmitting },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
