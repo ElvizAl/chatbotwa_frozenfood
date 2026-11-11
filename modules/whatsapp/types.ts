@@ -1,5 +1,5 @@
 export type KirimConnectionResult = {
-  state: "connected" | "disconnected" | "not_found" | "not_configured" | "error";
+  state: "connected" | "unverified" | "disconnected" | "not_found" | "not_configured" | "error";
   message: string;
   webhookConfigured: boolean;
   account?: {

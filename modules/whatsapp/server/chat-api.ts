@@ -1,6 +1,7 @@
 import "server-only";
 
 import { KirimError } from "@kirimdev/sdk";
+import { unstable_rethrow } from "next/navigation";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 
@@ -39,6 +40,8 @@ export async function requireChatAccess(request: Request, mutation = false) {
 }
 
 export function chatErrorResponse(error: unknown) {
+  // Next.js memakai exception untuk proses prerender; ini bukan kegagalan layanan.
+  unstable_rethrow(error);
   if (error instanceof ChatApiError) return chatResponse({ error: error.message }, error.status);
   if (error instanceof z.ZodError || error instanceof SyntaxError) {
     return chatResponse({ error: "Data permintaan tidak valid." }, 400);

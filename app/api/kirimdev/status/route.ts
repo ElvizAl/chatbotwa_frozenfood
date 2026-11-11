@@ -50,14 +50,16 @@ export async function GET(request: Request) {
       }, 404);
     }
 
-    const connected = account.status === "connected" &&
-      (account.meta_status === null || account.meta_status === "CONNECTED");
+    const connected = account.status === "connected" && account.meta_status === "CONNECTED";
+    const unverified = account.status === "connected" && account.meta_status == null;
 
     return respond({
-      state: connected ? "connected" : "disconnected",
+      state: connected ? "connected" : unverified ? "unverified" : "disconnected",
       message: connected
         ? "Nomor WhatsApp terhubung ke Kirimdev. Penerimaan webhook perlu diuji terpisah."
-        : "Nomor ditemukan, tetapi belum siap mengirim pesan. Periksa status nomor di dashboard Kirimdev.",
+        : unverified
+          ? "Akun ditemukan di Kirimdev, tetapi status koneksi nomor di Meta belum tersedia. Periksa koneksi nomor dan sinkronisasi pesan masuk pada dashboard Kirimdev."
+          : "Nomor ditemukan, tetapi belum siap mengirim pesan. Periksa status nomor di dashboard Kirimdev.",
       webhookConfigured,
       account: {
         name: account.name,

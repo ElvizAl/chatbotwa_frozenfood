@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from "bun:test";
 import { createHmac } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { KirimError } from "@kirimdev/sdk";
+import { redirect } from "next/navigation";
 import { canReply } from "../modules/whatsapp/server/chat-mappers";
 import { describeWebhook } from "../modules/whatsapp/server/webhook-event";
 
@@ -15,6 +16,10 @@ let dbFailed;
 let version;
 let receipts;
 let lastEventAt;
+let account;
+let diagnosticLogs;
+let consoleSpies;
+let authError;
 
 const phone = {
   conversations: {
@@ -49,29 +54,46 @@ const db = {
 
 mock.module("server-only", () => ({}));
 mock.module(fileURLToPath(new URL("../lib/auth.ts", import.meta.url)), () => ({
-  auth: { api: { getSession: async () => authenticated ? { user: { id: "test-user" } } : null } },
+  auth: { api: { getSession: async () => {
+    if (authError) throw authError;
+    return authenticated ? { user: { id: "test-user" } } : null;
+  } } },
 }));
-mock.module(fileURLToPath(new URL("../lib/kirim.ts", import.meta.url)), () => ({ whatsapp: phone }));
+mock.module(fileURLToPath(new URL("../lib/kirim.ts", import.meta.url)), () => ({
+  whatsapp: phone,
+  kirim: { accounts: { list: async () => [account] } },
+}));
 mock.module(fileURLToPath(new URL("../lib/db/prisma.ts", import.meta.url)), () => ({ prisma: db }));
 
 const { GET: listChats } = await import("../app/api/kirimdev/conversations/route");
 const { GET: getMessages, POST: sendMessage } = await import("../app/api/kirimdev/conversations/[id]/messages/route");
 const { GET: getRevision } = await import("../app/api/kirimdev/revision/route");
 const { POST: receiveWebhook } = await import("../app/api/webhooks/kirimdev/route");
+const { GET: getConnectionStatus } = await import("../app/api/kirimdev/status/route");
 
 beforeEach(() => {
+  diagnosticLogs = [];
+  consoleSpies = ["info", "warn", "error"].map((level) => spyOn(console, level).mockImplementation((entry) => {
+    diagnosticLogs.push(JSON.parse(entry));
+  }));
   process.env.KIRIMDEV_PHONE_NUMBER_ID = phoneId;
   process.env.KIRIMDEV_API_KEY = "local-test-api-key";
   process.env.KIRIMDEV_WEBHOOK_SECRET = "local-test-webhook-secret";
   authenticated = true;
+  authError = null;
   sendCalls = [];
   receipts = new Set();
   version = 0;
   dbFailed = false;
+  account = { phone_number_id: phoneId, phone_number: "+62000000000", name: "Test", status: "connected", meta_status: "CONNECTED" };
   conversation = {
     id: conversationId, status: "open", contact: { id: "ctc_TEST", name: "Test", phone_number: "+62000000000" },
     unread_count: 1, last_message_at: new Date().toISOString(), last_inbound_at: new Date().toISOString(),
   };
+});
+
+afterEach(() => {
+  consoleSpies.forEach((spy) => spy.mockRestore());
 });
 
 const context = () => ({ params: Promise.resolve({ id: conversationId }) });
@@ -92,6 +114,70 @@ function webhook(payload, options = {}) {
     headers: options.noSignature ? {} : { "x-kirim-signature": `t=${timestamp},v1=${signature}` },
   });
 }
+
+describe("diagnostic logs", () => {
+  test("exception internal Next.js diteruskan tanpa log error palsu", async () => {
+    try { redirect("/login"); } catch (error) { authError = error; }
+    await expect(listChats(new Request("http://localhost/api/kirimdev/conversations"))).rejects.toThrow("NEXT_REDIRECT");
+    expect(diagnosticLogs).toHaveLength(0);
+  });
+
+  test("tahap webhook dibedakan tanpa membocorkan payload atau secret", async () => {
+    const payload = inbound();
+    payload.entry[0].changes[0].value.messages[0].text.body = "private-message-body";
+    await receiveWebhook(webhook(payload));
+    await receiveWebhook(webhook(payload));
+    await receiveWebhook(webhook(inbound("987654321")));
+    await receiveWebhook(webhook(payload, { secret: "wrong-secret" }));
+    dbFailed = true;
+    await receiveWebhook(webhook(inbound()));
+
+    const stages = diagnosticLogs.map((entry) => entry.stage);
+    expect(stages).toContain("received");
+    expect(stages).toContain("stored");
+    expect(stages).toContain("duplicate");
+    expect(stages).toContain("ignored");
+    expect(stages).toContain("invalid_signature");
+    expect(stages).toContain("processing_failed");
+    expect(diagnosticLogs.find((entry) => entry.stage === "stored").messageCount).toBe(1);
+    expect(diagnosticLogs.find((entry) => entry.stage === "ignored").phoneMatches).toBe(false);
+    expect(diagnosticLogs[0].requestId).toBe(diagnosticLogs[1].requestId);
+
+    const output = JSON.stringify(diagnosticLogs);
+    for (const sensitive of ["private-message-body", process.env.KIRIMDEV_API_KEY, process.env.KIRIMDEV_WEBHOOK_SECRET, phoneId, "62000000000"]) {
+      expect(output).not.toContain(sensitive);
+    }
+  });
+
+  test("log daftar chat hanya mencatat jumlah dan pagination", async () => {
+    await listChats(new Request("http://localhost/api/kirimdev/conversations"));
+    const entry = diagnosticLogs.find((item) => item.stage === "conversations_loaded");
+    expect(entry.count).toBe(1);
+    expect(entry.httpStatus).toBe(200);
+    expect(JSON.stringify(entry)).not.toContain(conversation.contact.name);
+    expect(JSON.stringify(entry)).not.toContain(conversation.contact.phone_number);
+  });
+});
+
+describe("connection status", () => {
+  test("status Meta yang belum tersedia tidak dianggap terhubung", async () => {
+    account.meta_status = null;
+    const response = await getConnectionStatus(new Request("http://localhost/api/kirimdev/status"));
+    expect(response.status).toBe(200);
+    expect((await response.json()).state).toBe("unverified");
+  });
+
+  test("status Meta CONNECTED dikonfirmasi terhubung", async () => {
+    const response = await getConnectionStatus(new Request("http://localhost/api/kirimdev/status"));
+    expect((await response.json()).state).toBe("connected");
+  });
+
+  test("status Meta yang belum terhubung tetap ditandai perlu diperiksa", async () => {
+    account.meta_status = "UNVERIFIED";
+    const response = await getConnectionStatus(new Request("http://localhost/api/kirimdev/status"));
+    expect((await response.json()).state).toBe("disconnected");
+  });
+});
 
 describe("chat API", () => {
   test("list, thread, revision dan send wajib login", async () => {

@@ -34,6 +34,7 @@ export function WhatsappOverview() {
   const connected = connection?.state === "connected";
   const statusLabel = checking ? "Memeriksa…"
     : connected ? "Terhubung"
+    : connection?.state === "unverified" ? "Belum terverifikasi"
     : connection ? "Perlu diperiksa" : "Belum diperiksa";
 
   return (

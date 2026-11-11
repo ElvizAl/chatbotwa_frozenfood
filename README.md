@@ -97,6 +97,34 @@ pengiriman template, serta upload lampiran dari web belum diaktifkan.
 
 Jalankan pengujian dengan `bun test tests/whatsapp.test.mjs`.
 
+### Diagnostik pesan tidak muncul
+
+Setelah perubahan kode dideploy, buka project di Vercel → **Logs** dan filter
+`/api/webhooks/kirimdev` atau cari `kirimdev.webhook`. Kirim pesan dari nomor lain
+ke nomor toko, lalu buka detail request **POST**, bukan hanya request GET halaman.
+Saat lokal, log yang sama muncul di terminal `bun run dev`.
+
+Log berbentuk JSON dengan `source`, `stage`, dan `requestId` untuk menghubungkan
+baris dari request yang sama. Isi chat, nomor pelanggan, API key, signature, dan
+webhook secret tidak dicetak.
+
+| Stage | Arti |
+| --- | --- |
+| `received` | Request POST mencapai endpoint webhook. |
+| `stored` | Signature valid, nomor cocok, dan receipt webhook tercatat. |
+| `duplicate` | Webhook sudah pernah diproses; retry diakui tanpa menaikkan revision. |
+| `ignored` | Nomor tidak cocok atau bentuk event belum dikenali; periksa `phoneMatches` dan `recognized`. |
+| `invalid_signature` / `signature_expired` | Signature gagal diverifikasi. |
+| `invalid_json` | Signature valid tetapi body bukan JSON valid. |
+| `not_configured` | Environment webhook belum lengkap. |
+| `processing_failed` | Pemrosesan gagal; kode database/network yang aman dicatat bila tersedia. |
+
+Status 200 sendiri belum membuktikan ada pesan baru: `duplicate` dan `ignored`
+juga mengembalikan 200. Endpoint daftar chat mencetak
+`source: kirimdev.chat`, `stage: conversations_loaded`, dan `count` yang menunjukkan
+berapa percakapan dikembalikan API Kirimdev. Tidak ada log sukses setiap poll
+revision agar log tidak dipenuhi request pengecekan tiap 6 detik.
+
 Panduan resmi: [SDK](https://docs.kirimdev.com/sdks/typescript/),
 [Webhook](https://docs.kirimdev.com/webhooks/overview/).
 
