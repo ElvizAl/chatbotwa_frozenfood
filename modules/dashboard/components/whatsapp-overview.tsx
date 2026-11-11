@@ -69,7 +69,7 @@ export function WhatsappOverview() {
             <p>Daftarkan URL HTTPS publik aplikasi dengan path berikut di dashboard Kirimdev:</p>
             <code className="block break-all rounded bg-slate-50 p-2 text-[10px] text-slate-700">/api/webhooks/kirimdev</code>
             <p>Pilih event <code>message.received</code> dan <code>message.status</code>. Signing secret harus sesuai dengan <code>KIRIMDEV_WEBHOOK_SECRET</code>.</p>
-            <p>Webhook saat ini memverifikasi penerimaan. Penyimpanan pesan dan balasan chatbot belum diaktifkan; percakapan di atas adalah contoh.</p>
+            <p>Pilih juga <code>message.sent</code> untuk pesan yang dikirim dari Kirimdev atau aplikasi ponsel. Webhook memperbarui halaman Chat WhatsApp; riwayat pesan dibaca dari API Kirimdev. Percakapan di atas adalah contoh.</p>
           </div>
         </details>
       </div>

@@ -61,10 +61,41 @@ pelanggan. Restart `bun run dev` setelah mengubah environment.
    Kirim test delivery dari dashboard Kirimdev, lalu periksa respons 200 pada
    riwayat delivery. Request tanpa signature valid akan ditolak (401).
 
-Handler saat ini memverifikasi signature dan mengakui penerimaan webhook.
-Pesan belum disimpan atau dibalas otomatis. Sebelum memproses transaksi atau
-balasan chatbot, tambahkan penyimpanan pesan dan deduplikasi event secara persisten.
-Status koneksi nomor tidak membuktikan webhook sudah dapat diakses.
+## Chat WhatsApp di web
+
+Buka **Chat WhatsApp** di sidebar atau `/chat` setelah login. Riwayat dan status
+pesan dibaca langsung dari API Kirimdev, sehingga chat yang sudah ada dapat tampil
+tanpa mengimpor ulang. Pilih percakapan untuk membalas teks; lampiran masuk dapat
+dibuka dari tautannya. Percakapan dan pesan lama tersedia melalui tombol muat lagi.
+Pencarian berlaku untuk daftar percakapan yang sudah dimuat.
+
+Sebelum menjalankan versi ini, terapkan migrasi dan generate Prisma Client:
+
+```bash
+bunx prisma migrate deploy --config prisma7.config.ts
+bunx prisma generate --config prisma7.config.ts
+```
+
+Webhook memverifikasi signature, membatasi event ke Phone Number ID yang
+dikonfigurasi, lalu mencatat receipt dan menaikkan revision dalam satu transaksi.
+Payload yang sama tidak menaikkan revision dua kali. Isi pesan tetap disimpan di
+Kirimdev; database lokal hanya menyimpan receipt hash, jenis event, dan state
+pembaruan. Jika database gagal, webhook mengembalikan 503 agar Kirimdev mengulang.
+
+Inbox memeriksa revision lokal setiap 6 detik selama tab terlihat. Perubahan
+revision memicu pembacaan ulang API. Refresh cadangan setiap 60 detik dan tombol
+**Muat ulang** juga tersedia. Aktifkan `message.received`, `message.status`, dan
+`message.sent` pada subscription agar pesan masuk, balasan dari sumber lain, serta
+status terkirim/dibaca memperbarui inbox. Status koneksi nomor tidak membuktikan
+webhook sudah dapat diakses.
+
+Balasan teks hanya tersedia dalam 24 jam setelah pesan terakhir pelanggan.
+Di luar jendela itu gunakan template melalui Kirimdev. Endpoint pengiriman wajib
+login, memeriksa origin, mengambil penerima dari percakapan di server, dan memakai
+key idempotensi agar retry permintaan yang sama tidak mengirim dua kali. Bot AI,
+pengiriman template, serta upload lampiran dari web belum diaktifkan.
+
+Jalankan pengujian dengan `bun test tests/whatsapp.test.mjs`.
 
 Panduan resmi: [SDK](https://docs.kirimdev.com/sdks/typescript/),
 [Webhook](https://docs.kirimdev.com/webhooks/overview/).

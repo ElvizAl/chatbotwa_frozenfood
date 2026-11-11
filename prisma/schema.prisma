@@ -74,3 +74,23 @@ model Verification {
   @@index([identifier])
   @@map("verification")
 }
+
+// Kirimdev menyimpan riwayat pesan. State lokal ini memicu refresh inbox
+// lintas proses dan mencegah webhook retry diproses berulang.
+model WhatsappSyncState {
+  phoneNumberId String   @id
+  version       BigInt   @default(0)
+  updatedAt     DateTime @updatedAt
+
+  @@map("whatsapp_sync_state")
+}
+
+model WhatsappWebhookReceipt {
+  id            String   @id
+  phoneNumberId String
+  eventType     String
+  createdAt     DateTime @default(now())
+
+  @@index([phoneNumberId, createdAt])
+  @@map("whatsapp_webhook_receipt")
+}
